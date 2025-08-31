@@ -22,7 +22,7 @@ if (originalButton) {
     const clonedButton = originalButton.cloneNode(true);
 
     // Update the text of the cloned button
-    clonedButton.textContent = "Carica WAV";
+    clonedButton.textContent = "Carica da file";
 
     // add onclick hook
     clonedButton.onclick = function () {
