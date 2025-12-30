@@ -77,7 +77,13 @@ if (originalButton) {
                 const fileName = event.target.files[0].name.toLowerCase();
                 const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
                 if (!isValidExtension) {
-                    alert('Formato file non supportato. Si prega di caricare un file .wav o .mp3.');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Formato file non supportato',
+                        text: 'Si prega di caricare un file .wav o .mp3',
+                        confirmButtonText: 'OK'
+                    });
+
                     event.target.value = ''; // Clear the input
                     return;
                 }
@@ -85,13 +91,35 @@ if (originalButton) {
                 // Convert mp3 to wav
                 if (selectedFile.type === 'audio/mpeg' || selectedFile.name.toLowerCase().endsWith('.mp3')) {
                     try {
+                        // use swal3 to show a loading alert
+                        Swal.fire({
+                            title: 'Conversione e compressione',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
                         const wavFile = await convertMp3FileToWav(selectedFile);
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(wavFile);
                         event.target.files = dataTransfer.files;
+
+                        Swal.close();
                     } catch (err) {
                         fabamore.console.error('Errore nella conversione MP3 in WAV', err);
                     }
+                }
+
+                // Check file size (limit: 5MB)
+                const maxSize = 50 * 1024 * 1024; // 5MB in bytes
+                if (event.target.files[0].size > maxSize) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'File di grandi dimensioni',
+                        text: 'Il file selezionato supera i 50MB. Potrebbe causare errori durante il caricamento, è consigliabile dividere tracce lunghe in più caricamenti.',
+                        confirmButtonText: 'OK'
+                    });
                 }
             });
 
@@ -152,8 +180,15 @@ function audioBufferToWav(buffer) {
     const view = new DataView(arrayBuffer);
     let offset = 0;
 
-    function setUint16(data) { view.setUint16(offset, data, true); offset += 2; }
-    function setUint32(data) { view.setUint32(offset, data, true); offset += 4; }
+    function setUint16(data) {
+        view.setUint16(offset, data, true);
+        offset += 2;
+    }
+
+    function setUint32(data) {
+        view.setUint32(offset, data, true);
+        offset += 4;
+    }
 
     // RIFF identifier 'RIFF'
     setUint32(0x46464952);
