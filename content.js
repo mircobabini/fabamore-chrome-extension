@@ -71,7 +71,19 @@ if (originalButton) {
                 if (!selectedFile) {
                     return;
                 }
-                if (selectedFile.type === 'audio/mpeg' || selectedFile.name.endsWith('.mp3')) {
+
+                // Check if file is .wav or .mp3
+                const validExtensions = ['.wav', '.mp3'];
+                const fileName = event.target.files[0].name.toLowerCase();
+                const isValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+                if (!isValidExtension) {
+                    alert('Formato file non supportato. Si prega di caricare un file .wav o .mp3.');
+                    event.target.value = ''; // Clear the input
+                    return;
+                }
+
+                // Convert mp3 to wav
+                if (selectedFile.type === 'audio/mpeg' || selectedFile.name.toLowerCase().endsWith('.mp3')) {
                     try {
                         const wavFile = await convertMp3FileToWav(selectedFile);
                         const dataTransfer = new DataTransfer();
