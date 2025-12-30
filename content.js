@@ -113,14 +113,35 @@ if (originalButton) {
     fabamore.console.warn('Recording not found.');
 }
 
-// Convert an MP3 File object to a WAV File object
+// Compress WAV by downsampling and converting to mono
 async function convertMp3FileToWav(file) {
     const arrayBuffer = await file.arrayBuffer();
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     audioCtx.close();
-    const wavBuffer = audioBufferToWav(audioBuffer);
-    return new File([wavBuffer], file.name.replace(/\.mp3$/i, '.wav'), { type: 'audio/wav' });
+
+    // Downsample to 22050 Hz and mono
+    const targetSampleRate = 22050;
+    const length = Math.floor(audioBuffer.length * targetSampleRate / audioBuffer.sampleRate);
+    const offlineCtx = new OfflineAudioContext(1, length, targetSampleRate);
+    const source = offlineCtx.createBufferSource();
+    // Convert to mono by averaging channels
+    const monoBuffer = offlineCtx.createBuffer(1, audioBuffer.length, audioBuffer.sampleRate);
+    const channelData = monoBuffer.getChannelData(0);
+    for (let i = 0; i < audioBuffer.length; i++) {
+        let sum = 0;
+        for (let c = 0; c < audioBuffer.numberOfChannels; c++) {
+            sum += audioBuffer.getChannelData(c)[i];
+        }
+        channelData[i] = sum / audioBuffer.numberOfChannels;
+    }
+    source.buffer = monoBuffer;
+    source.connect(offlineCtx.destination);
+    source.start();
+    const renderedBuffer = await offlineCtx.startRendering();
+
+    const wavBuffer = audioBufferToWav(renderedBuffer);
+    return new File([wavBuffer], file.name.replace(/\.mp3$/i, '.wav'), {type: 'audio/wav'});
 }
 
 // Encode an AudioBuffer as a WAV ArrayBuffer
