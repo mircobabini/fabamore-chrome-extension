@@ -81,7 +81,8 @@ if (originalButton) {
                         icon: 'error',
                         title: 'Formato file non supportato',
                         text: 'Si prega di caricare un file .wav o .mp3',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: 'OK',
+                        buttonsStyling: false,
                     });
 
                     event.target.value = ''; // Clear the input
@@ -118,7 +119,8 @@ if (originalButton) {
                         icon: 'warning',
                         title: 'File di grandi dimensioni',
                         text: 'Il file selezionato supera i 50MB. Potrebbe causare errori durante il caricamento, è consigliabile dividere tracce lunghe in più caricamenti.',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: 'OK',
+                        buttonsStyling: false,
                     });
                 }
             });
