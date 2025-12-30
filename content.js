@@ -113,12 +113,13 @@ if (originalButton) {
                 }
 
                 // Check file size (limit: 5MB)
-                const maxSize = 50 * 1024 * 1024; // 5MB in bytes
+                const maxSizeMb = 120;
+                const maxSize = maxSizeMb * 1024 * 1024; // 5MB in bytes
                 if (event.target.files[0].size > maxSize) {
                     Swal.fire({
                         icon: 'warning',
                         title: 'File di grandi dimensioni',
-                        text: 'Il file selezionato supera i 50MB. Potrebbe causare errori durante il caricamento, è consigliabile dividere tracce lunghe in più caricamenti.',
+                        text: 'Il file selezionato supera i ' + maxSizeMb + 'MB. Potrebbe causare errori durante il caricamento, è consigliabile dividere tracce lunghe in più caricamenti.',
                         confirmButtonText: 'OK',
                         buttonsStyling: false,
                     });
