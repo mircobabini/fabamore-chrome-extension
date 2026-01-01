@@ -23,6 +23,28 @@ if (originalButton) {
 
     // Update the text of the cloned button
     clonedButton.textContent = "Carica da file";
+    clonedButton.style.position = 'relative';
+
+    const badgeLink = document.createElement('a');
+    badgeLink.href = 'https://mircobabini.dev/fabamore-per-faba-e-faba-plus/';
+    badgeLink.target = '_blank';
+    badgeLink.style.textDecoration = 'none';
+    
+    const badge = document.createElement('span');
+    badge.textContent = 'FabaMore';
+    badge.style.backgroundColor = '#ffffff';
+    badge.style.color = '#ed555a';
+    badge.style.fontSize = '12px';
+    badge.style.padding = '5px 10px';
+    badge.style.right = '-7px';
+    badge.style.position = 'absolute';
+    badge.style.lineHeight = '12px';
+    badge.style.border = '2px solid #ed555a';
+    badge.style.borderRadius = '12px';
+    badge.style.top = '-7px';
+
+    badgeLink.appendChild(badge);
+    clonedButton.appendChild(badgeLink);
 
     // add onclick hook
     clonedButton.onclick = function () {
@@ -112,7 +134,7 @@ if (originalButton) {
                     }
                 }
 
-                // Check file size (limit: 5MB)
+                // Check file size
                 const maxSizeMb = 120;
                 const maxSize = maxSizeMb * 1024 * 1024; // 5MB in bytes
                 if (event.target.files[0].size > maxSize) {
