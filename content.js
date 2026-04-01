@@ -31,7 +31,7 @@ if (originalButton) {
     badgeLink.style.textDecoration = 'none';
     
     const badge = document.createElement('span');
-    badge.textContent = 'FabaMore';
+    badge.textContent = 'FabaMore 1.6';
     badge.style.backgroundColor = '#ffffff';
     badge.style.color = '#ed555a';
     badge.style.fontSize = '12px';
@@ -76,6 +76,9 @@ if (originalButton) {
 
             // Allow both WAV and MP3 files to be selected
             fileInput.setAttribute('accept', '.wav,.mp3');
+            
+            // set as required
+            fileInput.setAttribute('required', 'required');
 
             // prepend the file input with a span: <p class="text-white font-bold text-center mb-3">Seleziona il file audio da caricare</p>
             const fileInputLabel = document.createElement('p');
@@ -88,6 +91,7 @@ if (originalButton) {
             fileInput.style.margin = '0 0 20px 50px';
 
             // Convert MP3 files to WAV before upload
+            // todo: check if this is still needed
             fileInput.addEventListener('change', async (event) => {
                 const selectedFile = event.target.files[0];
                 if (!selectedFile) {
@@ -148,6 +152,42 @@ if (originalButton) {
                 }
             });
 
+            // hide the official submit button with the specific @click attribute (Vue/Alpine style)
+            let buttonSubmit;
+
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                if (btn.getAttribute && btn.getAttribute('@click') === "$store.externalRecording.stopAndSubmit($el.closest('form'))") {
+                    buttonSubmit = btn;
+                }
+
+                btn.style.display = 'none';
+            });
+
+            let lastItemHook = buttonSubmit && buttonSubmit.length ? buttonSubmit : document.querySelector('input[name="title"]');
+
+            // add a new input type submit with class = bg-white text-[#ED555A] rounded-full py-2 px-7 mb-3 and value "Invia a FABA"
+            const customSubmit = document.createElement('button');
+            customSubmit.type = 'submit';
+            customSubmit.className = 'flex flex-col text-2xl font-rodger-black font-black bg-white text-[#ED555A] rounded-full py-2 px-7 mb-3';
+            customSubmit.style = 'width: 100%; margin-top: 10px;';
+            customSubmit.textContent = 'Invia a FABA';
+            // Insert after file input
+            fileInput.parentNode.appendChild(customSubmit, lastItemHook);
+
+            // Add submit event listener to the form to update button state
+            const parentForm = fileInput.closest('form');
+            if (parentForm) {
+                parentForm.addEventListener('submit', function (e) {
+                    // If the event is not prevented (no validation error), update button
+                    setTimeout(() => {
+                        if (!e.defaultPrevented) {
+                            customSubmit.textContent = 'Caricamento...';
+                            customSubmit.disabled = true;
+                        }
+                    }, 0);
+                });
+            }
         } else {
             fabamore.console.warn('File input not found.');
         }

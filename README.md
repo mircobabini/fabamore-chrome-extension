@@ -5,6 +5,18 @@
 
 # Changelog
 
+## 1.6 - 2026-04-02
+- Update badge to show current version (FabaMore 1.6)
+- Add `required` attribute to file input to prevent empty submissions
+- Add custom "Invia a FABA" submit button with loading state
+- Hide original Vue-powered submit buttons to keep custom flow visible
+- Add form submit handler to show "Caricamento..." state during upload
+
+## 1.5 - 2026-03-27
+- Hide the built-in form submit controls and add the new `Invia a FABA` button so the custom upload flow stays visible.
+- Keep the recorder block collapsed and keep the file upload form visible with instructional text when the new button is used.
+- Suppress the original Vue-powered submit flow so the extension's custom submit stays front and center.
+
 ## 1.4 - 2026-01-01
 - Set big file threshold notice at 120MB
 - Fix SweetAlert2 (Swal2) buttons appearance
