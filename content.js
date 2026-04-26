@@ -9,13 +9,20 @@ fabamore.console.warn = () => {
 fabamore.console.error = () => {
 };
 
-// Find the button based on its class and text content
-const originalButton = document.querySelector(
-  "button.bg-white.rounded-full.py-2.px-7.mb-3"
-);
+function initFabamoreOnMatchingSelector() {
+    const originalButton = document.querySelector(
+      "button.bg-white.rounded-full.py-2.px-7.mb-3"
+    );
 
-// Check if the button exists
-if (originalButton) {
+    if (!originalButton) {
+        return false;
+    }
+
+    if (originalButton.dataset.fabamoreInitialized === 'true') {
+        return true;
+    }
+
+    originalButton.dataset.fabamoreInitialized = 'true';
     originalButton.textContent = "Registra";
 
     // Clone the button
@@ -31,7 +38,7 @@ if (originalButton) {
     badgeLink.style.textDecoration = 'none';
     
     const badge = document.createElement('span');
-    badge.textContent = 'FabaMore 1.6';
+    badge.textContent = 'FabaMore 1.7';
     badge.style.backgroundColor = '#ffffff';
     badge.style.color = '#ed555a';
     badge.style.fontSize = '12px';
@@ -202,8 +209,17 @@ if (originalButton) {
 
     // Append the cloned button after the original button
     originalButton.parentNode.insertBefore(clonedButton, originalButton.nextSibling);
-} else {
-    fabamore.console.warn('Recording not found.');
+    return true;
+}
+
+if (!initFabamoreOnMatchingSelector()) {
+    const observer = new MutationObserver(() => {
+        if (initFabamoreOnMatchingSelector()) {
+            observer.disconnect();
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // Compress WAV by downsampling and converting to mono
