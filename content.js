@@ -12,27 +12,159 @@ fabamore.console.error = () => {
 const isInvitePage = window.location.pathname.includes('/invites/');
 
 if (isInvitePage) {
-    Swal.fire({
-        icon: 'info',
-        title: 'FabaMore non funziona :(',
-        text: "C'è stato un aggiornamento importante dell'applicativo MyFaba Studio, pertanto l'estensione FabaMore al momento non funziona. Stiamo lavorando per farla tornare funzionante più velocemente possibile.",
-        confirmButtonText: 'Ho capito',
-        buttonsStyling: false,
-        didOpen: () => {
-            const confirmButton = document.querySelector('.swal2-confirm');
-            if (confirmButton) {
-                confirmButton.style.backgroundColor = '#ed555a';
-                confirmButton.style.color = '#ffffff';
-                confirmButton.style.borderRadius = '9999px';
-                confirmButton.style.padding = '10px 28px';
-                confirmButton.style.fontWeight = '700';
-                confirmButton.style.border = 'none';
-                confirmButton.style.boxShadow = 'none';
-            }
-        },
-    });
+    showInviteWelcomePopup();
 } else {
     initFabamore();
+}
+
+function getInviteContext() {
+    const pathnameMatch = window.location.pathname.match(/^\/([a-z]{2})\/invites\/([^/?#]+)/i);
+    const localePrefix = pathnameMatch ? `/${pathnameMatch[1]}` : '';
+    const inviteId = pathnameMatch ? pathnameMatch[2] : null;
+    const token = new URLSearchParams(window.location.search).get('token');
+
+    return {
+        localePrefix,
+        inviteId,
+        token
+    };
+}
+
+function styleSwalButtons() {
+    const confirmButton = document.querySelector('.swal2-confirm');
+    const cancelButton = document.querySelector('.swal2-cancel');
+
+    if (confirmButton) {
+        confirmButton.style.backgroundColor = '#ed555a';
+        confirmButton.style.color = '#ffffff';
+        confirmButton.style.borderRadius = '9999px';
+        confirmButton.style.padding = '10px 28px';
+        confirmButton.style.fontWeight = '700';
+        confirmButton.style.border = 'none';
+        confirmButton.style.boxShadow = 'none';
+    }
+
+    if (cancelButton) {
+        cancelButton.style.backgroundColor = '#ffffff';
+        cancelButton.style.color = '#ed555a';
+        cancelButton.style.borderRadius = '9999px';
+        cancelButton.style.padding = '10px 20px';
+        cancelButton.style.fontWeight = '700';
+        cancelButton.style.border = '2px solid #ed555a';
+        cancelButton.style.boxShadow = 'none';
+    }
+}
+
+function showInviteWelcomePopup() {
+    const inviteContext = getInviteContext();
+    const iconUrl = chrome.runtime.getURL('fabamore-swal2-icon.jpg');
+
+    Swal.fire({
+        imageUrl: iconUrl,
+        imageWidth: 180,
+        imageHeight: 180,
+        imageAlt: 'FabaMore icon',
+        title: 'FabaMore è pronto!',
+        html: '<p>FabaMore ti permette di selezionare un file dal tuo computer e caricarlo sui FabaMe, senza dover registrare nuovamente la traccia audio.</p><p style="margin-top:12px;"><span style="display:inline-block;padding:4px 10px;border-radius:9999px;border:2px solid #ed555a;color:#ed555a;font-size:12px;font-weight:700;">FabaMore 2.0</span></p>',
+        confirmButtonText: 'Carica audio',
+        showCancelButton: true,
+        cancelButtonText: 'Preferisco registrare io',
+        reverseButtons: true,
+        buttonsStyling: false,
+        didOpen: styleSwalButtons
+    }).then((result) => {
+        if (result.isConfirmed) {
+            showInviteUploadPopup(inviteContext);
+        }
+    });
+}
+
+function showInviteUploadPopup(inviteContext) {
+    Swal.fire({
+        title: 'Carica audio',
+        html: '' +
+            '<input id="fabamore-name" class="swal2-input" placeholder="Nome (es. Mirco)" />' +
+            '<input id="fabamore-title" class="swal2-input" placeholder="Titolo (es. La mia canzoncina)" />' +
+            '<input id="fabamore-audio" class="swal2-file" type="file" accept=".wav,.mp3,.webm,audio/wav,audio/mpeg,audio/webm" />',
+        confirmButtonText: 'Invia a FabaMe',
+        showCancelButton: true,
+        cancelButtonText: 'Annulla',
+        reverseButtons: true,
+        focusConfirm: false,
+        buttonsStyling: false,
+        didOpen: styleSwalButtons,
+        preConfirm: async () => {
+            const name = document.getElementById('fabamore-name').value.trim();
+            const title = document.getElementById('fabamore-title').value.trim();
+            const audioInput = document.getElementById('fabamore-audio');
+            const audioFile = audioInput && audioInput.files ? audioInput.files[0] : null;
+
+            if (!inviteContext.inviteId || !inviteContext.token) {
+                Swal.showValidationMessage('URL invito non valida: invite o token mancanti.');
+                return false;
+            }
+
+            if (!name) {
+                Swal.showValidationMessage('Inserisci il nome.');
+                return false;
+            }
+
+            if (!title) {
+                Swal.showValidationMessage('Inserisci il titolo.');
+                return false;
+            }
+
+            if (!audioFile) {
+                Swal.showValidationMessage('Seleziona un file audio .wav, .mp3 o .webm.');
+                return false;
+            }
+
+            const lowerFileName = audioFile.name.toLowerCase();
+            if (!lowerFileName.endsWith('.wav') && !lowerFileName.endsWith('.mp3') && !lowerFileName.endsWith('.webm')) {
+                Swal.showValidationMessage('Formato non supportato. Seleziona un file .wav, .mp3 o .webm.');
+                return false;
+            }
+
+            try {
+                await uploadInviteRecording(inviteContext, {name, title, audioFile});
+                return true;
+            } catch (error) {
+                const message = error && error.message ? error.message : 'Errore durante il caricamento.';
+                Swal.showValidationMessage(message);
+                return false;
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Audio caricato',
+                text: 'Il file è stato caricato correttamente su FabaMe.',
+                confirmButtonText: 'Perfetto',
+                buttonsStyling: false,
+                didOpen: styleSwalButtons
+            });
+        }
+    });
+}
+
+async function uploadInviteRecording(inviteContext, formValues) {
+    const formData = new FormData();
+    formData.append('audio', formValues.audioFile);
+    formData.append('creator', formValues.name);
+    formData.append('title', formValues.title);
+
+    const uploadUrl = `https://api.myfaba.com/api/v3/studio/invites/${inviteContext.inviteId}/recordings?token=${encodeURIComponent(inviteContext.token)}`;
+    const response = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+        credentials: 'omit'
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload fallito (${response.status}). ${errorText || 'Riprova tra poco.'}`);
+    }
 }
 
 function initFabamore() {
@@ -76,7 +208,7 @@ function initFabamoreOnMatchingSelector() {
     badgeLink.style.textDecoration = 'none';
     
     const badge = document.createElement('span');
-    badge.textContent = 'FabaMore 1.8';
+    badge.textContent = 'FabaMore 2.0';
     badge.style.backgroundColor = '#ffffff';
     badge.style.color = '#ed555a';
     badge.style.fontSize = '12px';

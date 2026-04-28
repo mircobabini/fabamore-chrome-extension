@@ -5,6 +5,13 @@
 
 # Changelog
 
+## 2.0 - 2026-04-28
+- Bump extension version to 2.0.
+- Add a new SweetAlert2 welcome popup on MyFaba invite pages with custom icon and version badge.
+- Add two CTAs in the welcome popup: `Preferisco registrare io` and `Carica audio`.
+- Add a second SweetAlert2 form flow that uploads audio (`.wav`/`.mp3`) to `/invites/{invite}/recordings?token=...` with `audio`, `name`, and `title`.
+- Align invite upload with MyFaba standard API endpoint (`api.myfaba.com/api/v3/studio/...`) and payload fields (`audio`, `creator`, `title`), with `.webm` support.
+
 ## 1.8 - 2026-04-28
 - Detect MyFaba Studio invite/recording pages (`/invites/`) and show a SweetAlert2 maintenance notice.
 - Temporarily disable extension flow on invite pages while adapting to the MyFaba Studio backend revamp.
