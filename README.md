@@ -5,6 +5,11 @@
 
 # Changelog
 
+## 1.7 - 2026-04-26
+- Restrict content script injection to `studio.myfaba.com` (hostname-based) instead of all websites.
+- Relax host permission from `/character-contents/*` to the full Studio hostname to avoid path lock-in.
+- Initialize FabaMore when the target button selector appears in the DOM, so activation no longer depends on a fixed page URL.
+
 ## 1.6 - 2026-04-02
 - Update badge to show current version (FabaMore 1.6)
 - Add `required` attribute to file input to prevent empty submissions
