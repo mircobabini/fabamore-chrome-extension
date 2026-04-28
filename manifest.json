@@ -1,6 +1,6 @@
 {
   "name": "FabaMore - Do more with your Faba or Faba+",
-  "version": "1.8",
+  "version": "2.0",
   "manifest_version": 3,
   "description": "Permits to show an upload field to directly load a .wav or .mp3 instead of recording it.",
   "content_scripts": [
@@ -10,6 +10,7 @@
       ],
       "js": [
         "assets/js/sweetalert2@11.min.js",
+        "assets/js/lamejs-1.2.1.min.js",
         "content.js"
       ],
       "css": [
@@ -20,6 +21,16 @@
   ],
   "host_permissions": [
     "https://studio.myfaba.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "fabamore-swal2-icon.jpg"
+      ],
+      "matches": [
+        "https://studio.myfaba.com/*"
+      ]
+    }
   ],
   "icons": {
     "16": "fabamore_16.jpg",
