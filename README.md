@@ -5,6 +5,11 @@
 
 # Changelog
 
+## 1.8 - 2026-04-28
+- Detect MyFaba Studio invite/recording pages (`/invites/`) and show a SweetAlert2 maintenance notice.
+- Temporarily disable extension flow on invite pages while adapting to the MyFaba Studio backend revamp.
+- Update maintenance popup copy and style the `Ho capito` button to match the primary MyFaba CTA.
+
 ## 1.7 - 2026-04-26
 - Restrict content script injection to `studio.myfaba.com` (hostname-based) instead of all websites.
 - Relax host permission from `/character-contents/*` to the full Studio hostname to avoid path lock-in.
