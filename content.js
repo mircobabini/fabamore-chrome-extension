@@ -9,6 +9,44 @@ fabamore.console.warn = () => {
 fabamore.console.error = () => {
 };
 
+const isInvitePage = window.location.pathname.includes('/invites/');
+
+if (isInvitePage) {
+    Swal.fire({
+        icon: 'info',
+        title: 'FabaMore non funziona :(',
+        text: "C'è stato un aggiornamento importante dell'applicativo MyFaba Studio, pertanto l'estensione FabaMore al momento non funziona. Stiamo lavorando per farla tornare funzionante più velocemente possibile.",
+        confirmButtonText: 'Ho capito',
+        buttonsStyling: false,
+        didOpen: () => {
+            const confirmButton = document.querySelector('.swal2-confirm');
+            if (confirmButton) {
+                confirmButton.style.backgroundColor = '#ed555a';
+                confirmButton.style.color = '#ffffff';
+                confirmButton.style.borderRadius = '9999px';
+                confirmButton.style.padding = '10px 28px';
+                confirmButton.style.fontWeight = '700';
+                confirmButton.style.border = 'none';
+                confirmButton.style.boxShadow = 'none';
+            }
+        },
+    });
+} else {
+    initFabamore();
+}
+
+function initFabamore() {
+    if (!initFabamoreOnMatchingSelector()) {
+        const observer = new MutationObserver(() => {
+            if (initFabamoreOnMatchingSelector()) {
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+}
+
 function initFabamoreOnMatchingSelector() {
     const originalButton = document.querySelector(
       "button.bg-white.rounded-full.py-2.px-7.mb-3"
@@ -38,7 +76,7 @@ function initFabamoreOnMatchingSelector() {
     badgeLink.style.textDecoration = 'none';
     
     const badge = document.createElement('span');
-    badge.textContent = 'FabaMore 1.7';
+    badge.textContent = 'FabaMore 1.8';
     badge.style.backgroundColor = '#ffffff';
     badge.style.color = '#ed555a';
     badge.style.fontSize = '12px';
@@ -210,16 +248,6 @@ function initFabamoreOnMatchingSelector() {
     // Append the cloned button after the original button
     originalButton.parentNode.insertBefore(clonedButton, originalButton.nextSibling);
     return true;
-}
-
-if (!initFabamoreOnMatchingSelector()) {
-    const observer = new MutationObserver(() => {
-        if (initFabamoreOnMatchingSelector()) {
-            observer.disconnect();
-        }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
 }
 
 // Compress WAV by downsampling and converting to mono
