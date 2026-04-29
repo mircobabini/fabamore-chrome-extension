@@ -3,7 +3,18 @@
 - [How to](https://mircobabini.dev/fabamore-per-faba-e-faba-plus/)
 - Supporta il caricamento di file WAV o MP3; i file MP3 vengono convertiti automaticamente in WAV.
 
+## Firefox build (same app)
+Per Firefox usa `manifest.firefox.json` come `manifest.json` nel pacchetto finale. Esempio:
+
+```bash
+mkdir -p dist/firefox && cp -R assets content.js fabamore-swal2-icon.jpg fabamore_16.jpg fabamore_48.jpg fabamore_64.jpg fabamore_128.jpg README.md dist/firefox/ && cp manifest.firefox.json dist/firefox/manifest.json && (cd dist/firefox && zip -r ../fabamore-firefox.zip . -x "*\.DS_Store")
+```
+
 # Changelog
+
+## 2.1 - 2026-04-29
+- Add dedicated `manifest.firefox.json` for Firefox WebExtensions, mirroring the Chrome behavior and assets.
+- Keep runtime behavior identical between Chrome and Firefox builds; only packaging metadata differs.
 
 ## 2.0 - 2026-04-28
 - Bump extension version to 2.0.
