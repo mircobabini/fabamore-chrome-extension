@@ -411,11 +411,17 @@ function showInviteFinalInstructionsPopup() {
 }
 
 function getReviewUrlByBrowser() {
-    const isFirefox = typeof browser !== 'undefined'
-        && browser.runtime
-        && browser.runtime.getURL
-        && browser.runtime.getURL('').startsWith('moz-extension://');
-    return isFirefox ? FIREFOX_REVIEW_URL : CHROME_REVIEW_URL;
+    try {
+        const extensionBaseUrl = typeof browser !== 'undefined'
+            && browser.runtime
+            && browser.runtime.getURL
+            ? browser.runtime.getURL('')
+            : '';
+        const isFirefox = extensionBaseUrl.startsWith('moz-extension://');
+        return isFirefox ? FIREFOX_REVIEW_URL : CHROME_REVIEW_URL;
+    } catch (error) {
+        return CHROME_REVIEW_URL;
+    }
 }
 
 function setInviteUploadStatus(message, tone, progressPercent) {
