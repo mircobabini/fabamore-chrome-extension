@@ -14,6 +14,8 @@ const FABAMORE_LABEL = `FabaMore ${FABAMORE_VERSION}`;
 const INVITE_MP3_TARGET_SAMPLE_RATE = 22050;
 const INVITE_MP3_TARGET_BITRATE = 64;
 const MP3_ENCODER_FRAME_SIZE = 1152;
+const CHROME_REVIEW_URL = 'https://chromewebstore.google.com/detail/fabamore-do-more-with-you/lceoahoffijefgjgepcnilmdlmjeeidn/reviews';
+const FIREFOX_REVIEW_URL = 'https://addons.mozilla.org/firefox/addon/fabamore/';
 const isInvitePage = window.location.pathname.includes('/invites/');
 
 if (typeof Swal !== 'undefined' && Swal.mixin) {
@@ -389,7 +391,7 @@ function showInviteUploadSuccessPopup() {
 }
 
 function showInviteFinalInstructionsPopup() {
-    const reviewUrl = 'https://chromewebstore.google.com/detail/fabamore-do-more-with-you/lceoahoffijefgjgepcnilmdlmjeeidn/reviews';
+    const reviewUrl = getReviewUrlByBrowser();
 
     Swal.fire({
         title: 'Tutto fatto!',
@@ -406,6 +408,12 @@ function showInviteFinalInstructionsPopup() {
             return false;
         }
     });
+}
+
+function getReviewUrlByBrowser() {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isFirefox = userAgent.includes('firefox');
+    return isFirefox ? FIREFOX_REVIEW_URL : CHROME_REVIEW_URL;
 }
 
 function setInviteUploadStatus(message, tone, progressPercent) {
