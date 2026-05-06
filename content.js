@@ -411,8 +411,10 @@ function showInviteFinalInstructionsPopup() {
 }
 
 function getReviewUrlByBrowser() {
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isFirefox = userAgent.includes('firefox');
+    const isFirefox = typeof browser !== 'undefined'
+        && browser.runtime
+        && browser.runtime.getURL
+        && browser.runtime.getURL('').startsWith('moz-extension://');
     return isFirefox ? FIREFOX_REVIEW_URL : CHROME_REVIEW_URL;
 }
 
