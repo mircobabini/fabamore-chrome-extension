@@ -14,8 +14,10 @@ const FABAMORE_LABEL = `FabaMore ${FABAMORE_VERSION}`;
 const INVITE_MP3_TARGET_SAMPLE_RATE = 22050;
 const INVITE_MP3_TARGET_BITRATE = 64;
 const MP3_ENCODER_FRAME_SIZE = 1152;
-const CHROME_REVIEW_URL = 'https://chromewebstore.google.com/detail/fabamore-do-more-with-you/lceoahoffijefgjgepcnilmdlmjeeidn/reviews';
-const FIREFOX_REVIEW_URL = 'https://addons.mozilla.org/firefox/addon/fabamore/';
+const CHROME_REVIEW_URL_DEFAULT = 'https://chromewebstore.google.com/detail/fabamore-do-more-with-you/lceoahoffijefgjgepcnilmdlmjeeidn/reviews';
+const CHROME_REVIEW_URL_IT = 'https://chromewebstore.google.com/detail/fabamore-do-more-with-you/lceoahoffijefgjgepcnilmdlmjeeidn/reviews?hl=it';
+const FIREFOX_REVIEW_URL_DEFAULT = 'https://addons.mozilla.org/en-US/firefox/addon/fabamore-do-more-faba/reviews/';
+const FIREFOX_REVIEW_URL_IT = 'https://addons.mozilla.org/it/firefox/addon/fabamore-do-more-faba/reviews/';
 const isInvitePage = window.location.pathname.includes('/invites/');
 
 if (typeof Swal !== 'undefined' && Swal.mixin) {
@@ -411,6 +413,8 @@ function showInviteFinalInstructionsPopup() {
 }
 
 function getReviewUrlByBrowser() {
+    const isItalianLanguage = isItalianReviewLanguage();
+
     try {
         const extensionBaseUrl = typeof browser !== 'undefined'
             && browser.runtime
@@ -418,10 +422,25 @@ function getReviewUrlByBrowser() {
             ? browser.runtime.getURL('')
             : '';
         const isFirefox = extensionBaseUrl.startsWith('moz-extension://');
-        return isFirefox ? FIREFOX_REVIEW_URL : CHROME_REVIEW_URL;
+        if (isFirefox) {
+            return isItalianLanguage ? FIREFOX_REVIEW_URL_IT : FIREFOX_REVIEW_URL_DEFAULT;
+        }
+
+        return isItalianLanguage ? CHROME_REVIEW_URL_IT : CHROME_REVIEW_URL_DEFAULT;
     } catch (error) {
-        return CHROME_REVIEW_URL;
+        return isItalianLanguage ? CHROME_REVIEW_URL_IT : CHROME_REVIEW_URL_DEFAULT;
     }
+}
+
+function isItalianReviewLanguage() {
+    const pathLocaleMatch = window.location.pathname.match(/^\/([a-z]{2})(?:\/|$)/i);
+    const pathLocale = pathLocaleMatch ? pathLocaleMatch[1].toLowerCase() : '';
+    const documentLanguage = (document.documentElement && document.documentElement.lang
+        ? document.documentElement.lang
+        : '').toLowerCase();
+    const navigatorLanguage = (navigator.language || '').toLowerCase();
+
+    return pathLocale === 'it' || documentLanguage.startsWith('it') || navigatorLanguage.startsWith('it');
 }
 
 function setInviteUploadStatus(message, tone, progressPercent) {

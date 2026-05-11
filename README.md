@@ -69,6 +69,9 @@ No remote scripts are fetched or executed. All JavaScript is packaged inside the
 
 # Changelog
 
+## 2.3 - 2026-05-11
+- On the final invite step, route review links by browser and language (`it` vs non-`it`) for both Chrome Web Store and Firefox Add-ons.
+
 ## 2.2 - 2026-05-06
 - On the final invite step, route the review CTA to Chrome Web Store on Chrome and to Firefox Add-ons on Firefox.
 
