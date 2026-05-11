@@ -69,6 +69,9 @@ No remote scripts are fetched or executed. All JavaScript is packaged inside the
 
 # Changelog
 
+## 2.2 - 2026-05-11
+- On the final invite step, route review links by browser and language (`it` vs non-`it`) for both Chrome Web Store and Firefox Add-ons.
+
 ## 2.1 - 2026-04-29
 - Add dedicated `manifest.firefox.json` for Firefox WebExtensions, mirroring the Chrome behavior and assets.
 - Keep runtime behavior identical between Chrome and Firefox builds; only packaging metadata differs.
