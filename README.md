@@ -69,6 +69,12 @@ No remote scripts are fetched or executed. All JavaScript is packaged inside the
 
 # Changelog
 
+## Unreleased
+- Detect valid FabaMe invite pages from the invite Ajax response instead of translated page text, so the FabaMore popup opens only after a real successful invite payload is received.
+- Read `remainingTime` from the invite response and stop uploads early when the selected audio is longer than the time still available on that FabaMe.
+- Bundle SweetAlert2 CSS inside the extension so the FabaMore popup renders as a real modal again on invite pages.
+- Load SweetAlert2 JavaScript only after the page head is ready, avoiding the early `appendChild` crash introduced by invite detection at `document_start`.
+
 ## 2.2 - 2026-05-11
 - On the final invite step, route review links by browser and language (`it` vs non-`it`) for both Chrome Web Store and Firefox Add-ons.
 

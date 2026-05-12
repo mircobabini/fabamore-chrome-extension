@@ -9,14 +9,23 @@
         "https://studio.myfaba.com/*"
       ],
       "js": [
-        "assets/js/sweetalert2@11.min.js",
         "assets/js/lamejs-1.2.1.min.js",
         "content.js"
       ],
       "css": [
+        "assets/css/sweetalert2.min.css",
         "assets/css/app.css"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://studio.myfaba.com/*"
+      ],
+      "js": [
+        "assets/js/sweetalert2@11.min.js"
+      ],
+      "run_at": "document_end"
     }
   ],
   "host_permissions": [
@@ -25,7 +34,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "fabamore-swal2-icon.jpg"
+        "fabamore-swal2-icon.jpg",
+        "assets/js/invite-ajax-hook.js"
       ],
       "matches": [
         "https://studio.myfaba.com/*"

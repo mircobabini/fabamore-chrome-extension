@@ -18,100 +18,153 @@ const CHROME_REVIEW_URL_DEFAULT = 'https://chromewebstore.google.com/detail/faba
 const CHROME_REVIEW_URL_IT = 'https://chromewebstore.google.com/detail/fabamore-do-more-with-you/lceoahoffijefgjgepcnilmdlmjeeidn/reviews?hl=it';
 const FIREFOX_REVIEW_URL_DEFAULT = 'https://addons.mozilla.org/en-US/firefox/addon/fabamore-do-more-faba/reviews/';
 const FIREFOX_REVIEW_URL_IT = 'https://addons.mozilla.org/it/firefox/addon/fabamore-do-more-faba/reviews/';
+const INVITE_AJAX_HOOK_SOURCE = 'fabamore-invite-ajax-hook';
+const INVITE_AJAX_WAIT_TIMEOUT_MS = 10000;
+const SWEETALERT_WAIT_TIMEOUT_MS = 10000;
 const isInvitePage = window.location.pathname.includes('/invites/');
+const inviteApiState = {
+    status: 'pending',
+    response: null,
+    listenerAttached: false,
+    waiters: []
+};
+let sweetAlertReadyPromise = null;
 
-if (typeof Swal !== 'undefined' && Swal.mixin) {
-    Swal = Swal.mixin({
-        allowOutsideClick: false
+if (isInvitePage) {
+    setupInviteAjaxObserver();
+    initInviteFlow();
+} else {
+    onDocumentBodyReady(async () => {
+        await ensureSwalReady();
+        initFabamore();
     });
 }
 
-if (isInvitePage) {
-    initInviteFlow();
-} else {
-    initFabamore();
-}
-
 async function initInviteFlow() {
-    const canUseFabamore = await canOpenInvitePopup();
-    if (!canUseFabamore) {
+    const inviteState = await waitForInviteApiState();
+    if (inviteState.status !== 'valid') {
         return;
     }
 
-    showInviteWelcomePopup();
+    await ensureSwalReady();
+
+    onDocumentBodyReady(() => {
+        showInviteWelcomePopup();
+    });
 }
 
-function hasAlertImageInPage() {
-    const images = document.querySelectorAll('img');
-    for (const image of images) {
-        const src = (image.getAttribute('src') || '').toLowerCase();
-        const srcset = (image.getAttribute('srcset') || '').toLowerCase();
-        if (src.includes('alert') || srcset.includes('alert')) {
-            return true;
-        }
+function setupInviteAjaxObserver() {
+    if (inviteApiState.listenerAttached) {
+        return;
     }
 
-    return false;
+    inviteApiState.listenerAttached = true;
+    window.addEventListener('message', handleInviteAjaxMessage);
+    injectInviteAjaxHook();
 }
 
-function getPageTextContent() {
-    return (document.body && document.body.textContent ? document.body.textContent : '').toLowerCase();
+function injectInviteAjaxHook() {
+    if (document.getElementById('fabamore-invite-ajax-hook')) {
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'fabamore-invite-ajax-hook';
+    script.src = chrome.runtime.getURL('assets/js/invite-ajax-hook.js');
+    script.async = false;
+    script.onload = () => {
+        script.remove();
+    };
+    (document.head || document.documentElement).appendChild(script);
 }
 
-function isInvalidInvitePage() {
-    const pageText = getPageTextContent();
-    return hasAlertImageInPage()
-        || pageText.includes('risorsa non trovata')
-        || pageText.includes('ooops');
+function handleInviteAjaxMessage(event) {
+    if (event.source !== window || !event.data || event.data.source !== INVITE_AJAX_HOOK_SOURCE) {
+        return;
+    }
+
+    const inviteContext = getInviteContext();
+    if (inviteContext.inviteId && event.data.invitePublicId && inviteContext.inviteId !== event.data.invitePublicId) {
+        return;
+    }
+
+    const parsedResponse = parseInviteAjaxResponseBody(event.data.body);
+    if (!parsedResponse) {
+        return;
+    }
+
+    if (parsedResponse.ok) {
+        setInviteApiState('valid', parsedResponse);
+        return;
+    }
+
+    setInviteApiState('invalid', parsedResponse);
 }
 
-function isInviteContentReady() {
-    return Array.from(document.querySelectorAll('button')).some((button) =>
-        (button.textContent || '').trim().toLowerCase() === 'continua'
-    );
+function parseInviteAjaxResponseBody(body) {
+    if (typeof body !== 'string' || !body.trim()) {
+        return null;
+    }
+
+    const segments = {};
+    body.split(/\r?\n/).forEach((line) => {
+        const match = line.match(/^(\d+):(.*)$/);
+        if (!match) {
+            return;
+        }
+
+        try {
+            segments[match[1]] = JSON.parse(match[2]);
+        } catch (error) {
+            return;
+        }
+    });
+
+    if (segments['1'] && typeof segments['1'].ok === 'boolean') {
+        return segments['1'];
+    }
+
+    try {
+        const parsed = JSON.parse(body);
+        return parsed && typeof parsed.ok === 'boolean' ? parsed : null;
+    } catch (error) {
+        return null;
+    }
 }
 
-function canOpenInvitePopup() {
+function setInviteApiState(status, response) {
+    inviteApiState.status = status;
+    inviteApiState.response = response;
+
+    while (inviteApiState.waiters.length) {
+        const waiter = inviteApiState.waiters.shift();
+        waiter({status, response});
+    }
+}
+
+function waitForInviteApiState() {
     return new Promise((resolve) => {
-        if (isInvalidInvitePage()) {
-            resolve(false);
+        if (inviteApiState.status !== 'pending') {
+            resolve({status: inviteApiState.status, response: inviteApiState.response});
             return;
         }
-
-        if (isInviteContentReady()) {
-            resolve(true);
-            return;
-        }
-
-        let resolved = false;
-
-        function finalize(result) {
-            if (resolved) {
-                return;
-            }
-
-            resolved = true;
-            observer.disconnect();
-            clearTimeout(timeoutId);
-            resolve(result);
-        }
-
-        const observer = new MutationObserver(() => {
-            if (isInvalidInvitePage()) {
-                finalize(false);
-                return;
-            }
-
-            if (isInviteContentReady()) {
-                finalize(true);
-            }
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['src', 'srcset'] });
 
         const timeoutId = setTimeout(() => {
-            finalize(false);
-        }, 8000);
+            const timeoutState = {
+                status: inviteApiState.status === 'pending' ? 'timeout' : inviteApiState.status,
+                response: inviteApiState.response
+            };
+
+            inviteApiState.waiters = inviteApiState.waiters.filter((waiter) => waiter !== finalize);
+            resolve(timeoutState);
+        }, INVITE_AJAX_WAIT_TIMEOUT_MS);
+
+        const finalize = (state) => {
+            clearTimeout(timeoutId);
+            resolve(state);
+        };
+
+        inviteApiState.waiters.push(finalize);
     });
 }
 
@@ -120,12 +173,81 @@ function getInviteContext() {
     const localePrefix = pathnameMatch ? `/${pathnameMatch[1]}` : '';
     const inviteId = pathnameMatch ? pathnameMatch[2] : null;
     const token = new URLSearchParams(window.location.search).get('token');
+    const inviteData = inviteApiState.response && inviteApiState.response.data ? inviteApiState.response.data : null;
 
     return {
         localePrefix,
         inviteId,
-        token
+        token,
+        inviteData,
+        remainingTime: inviteData && inviteData.limits && typeof inviteData.limits.remainingTime === 'number'
+            ? inviteData.limits.remainingTime
+            : null
     };
+}
+
+function onDocumentBodyReady(callback) {
+    if (document.body) {
+        callback();
+        return;
+    }
+
+    const observer = new MutationObserver(() => {
+        if (!document.body) {
+            return;
+        }
+
+        observer.disconnect();
+        callback();
+    });
+
+    observer.observe(document.documentElement, {childList: true, subtree: true});
+}
+
+function ensureSwalMixin() {
+    if (typeof Swal === 'undefined' || !Swal || !Swal.mixin) {
+        return;
+    }
+
+    if (Swal.__fabamoreConfigured) {
+        return;
+    }
+
+    Swal = Swal.mixin({
+        allowOutsideClick: false
+    });
+    Swal.__fabamoreConfigured = true;
+}
+
+function ensureSwalReady() {
+    if (typeof Swal !== 'undefined' && Swal && Swal.fire) {
+        ensureSwalMixin();
+        return Promise.resolve(Swal);
+    }
+
+    if (sweetAlertReadyPromise) {
+        return sweetAlertReadyPromise;
+    }
+
+    sweetAlertReadyPromise = new Promise((resolve) => {
+        const startTime = Date.now();
+        const intervalId = window.setInterval(() => {
+            if (typeof Swal !== 'undefined' && Swal && Swal.fire) {
+                window.clearInterval(intervalId);
+                ensureSwalMixin();
+                resolve(Swal);
+                return;
+            }
+
+            if (Date.now() - startTime >= SWEETALERT_WAIT_TIMEOUT_MS) {
+                window.clearInterval(intervalId);
+                fabamore.console.error('SweetAlert2 did not become available in time.');
+                resolve(null);
+            }
+        }, 50);
+    });
+
+    return sweetAlertReadyPromise;
 }
 
 function styleSwalButtons() {
@@ -168,6 +290,9 @@ function showInviteWelcomePopup() {
 
     const inviteContext = getInviteContext();
     const iconUrl = chrome.runtime.getURL('fabamore-swal2-icon.jpg');
+    const remainingTimeHtml = typeof inviteContext.remainingTime === 'number'
+        ? `<p style="margin-top:10px;font-size:13px;color:#555;">Tempo ancora disponibile su questo FabaMe: <strong>${formatDurationFromSeconds(inviteContext.remainingTime)}</strong>.</p>`
+        : '';
 
     Swal.fire({
         imageUrl: iconUrl,
@@ -175,7 +300,7 @@ function showInviteWelcomePopup() {
         imageHeight: 180,
         imageAlt: 'FabaMore icon',
         title: 'FabaMore è pronto!',
-        html: '<p><span style="display:inline-block;padding:4px 10px;border-radius:9999px;border:2px solid #ed555a;color:#ed555a;font-size:12px;font-weight:700;">' + FABAMORE_LABEL + '</span></p><p style="margin-top:12px;">FabaMore ti permette di selezionare un file dal tuo computer e caricarlo sui FabaMe, senza dover registrare nuovamente la traccia audio.</p><p style="margin-top:14px;"><a href="https://mircobabini.dev/fabamore-per-faba-e-faba-plus/" target="_blank" rel="noopener noreferrer" style="color:#ed555a;text-decoration:underline;font-weight:600;">Hai bisogno di aiuto?</a></p>',
+        html: '<p><span style="display:inline-block;padding:4px 10px;border-radius:9999px;border:2px solid #ed555a;color:#ed555a;font-size:12px;font-weight:700;">' + FABAMORE_LABEL + '</span></p><p style="margin-top:12px;">FabaMore ti permette di selezionare un file dal tuo computer e caricarlo sui FabaMe, senza dover registrare nuovamente la traccia audio.</p>' + remainingTimeHtml + '<p style="margin-top:14px;"><a href="https://mircobabini.dev/fabamore-per-faba-e-faba-plus/" target="_blank" rel="noopener noreferrer" style="color:#ed555a;text-decoration:underline;font-weight:600;">Hai bisogno di aiuto?</a></p>',
         confirmButtonText: 'Carica audio',
         showCancelButton: true,
         cancelButtonText: 'Preferisco registrare io',
@@ -332,6 +457,19 @@ function showInviteUploadPopup(inviteContext) {
             }
 
             try {
+                if (typeof inviteContext.remainingTime === 'number' && inviteContext.remainingTime >= 0) {
+                    setInviteUploadStatus('Controllo la durata del file rispetto al tempo ancora disponibile...', 'info', 3);
+                    const audioDurationSeconds = await getAudioFileDurationSeconds(audioFile);
+
+                    if (typeof audioDurationSeconds === 'number' && audioDurationSeconds > inviteContext.remainingTime) {
+                        setInviteUploadStatus('');
+                        Swal.showValidationMessage(
+                            `La traccia dura circa ${formatDurationFromSeconds(audioDurationSeconds)}, ma su questo FabaMe restano solo ${formatDurationFromSeconds(inviteContext.remainingTime)}. Dividi il file in piu parti e riprova.`
+                        );
+                        return false;
+                    }
+                }
+
                 setInviteUploadStatus('Verifico se il file puo essere alleggerito prima del caricamento...', 'info', 5);
                 const preparedAudio = await prepareInviteAudioFileForUpload(audioFile, (progress) => {
                     setInviteUploadStatus(progress.message, 'info', progress.percent);
@@ -509,6 +647,27 @@ function formatFileSizeMb(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1);
 }
 
+function formatDurationFromSeconds(seconds) {
+    const safeSeconds = Math.max(0, Math.ceil(seconds));
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const remainingSeconds = safeSeconds % 60;
+
+    if (hours > 0) {
+        return remainingSeconds > 0
+            ? `${hours}h ${minutes}m ${remainingSeconds}s`
+            : `${hours}h ${minutes}m`;
+    }
+
+    if (minutes > 0) {
+        return remainingSeconds > 0
+            ? `${minutes}m ${remainingSeconds}s`
+            : `${minutes}m`;
+    }
+
+    return `${safeSeconds}s`;
+}
+
 function isSupportedInviteAudioFile(file) {
     const fileName = file.name.toLowerCase();
     const supportedExtensions = ['.mp3', '.wav', '.webm', '.m4a', '.aac', '.ogg', '.oga', '.opus', '.mp4'];
@@ -535,6 +694,21 @@ function isSupportedInviteAudioFile(file) {
     }
 
     return false;
+}
+
+async function getAudioFileDurationSeconds(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    try {
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        audioCtx.close();
+        return audioBuffer.duration;
+    } catch (error) {
+        audioCtx.close();
+        fabamore.console.warn('Could not read audio duration before upload.', error);
+        return null;
+    }
 }
 
 async function prepareInviteAudioFileForUpload(file, onProgress) {
