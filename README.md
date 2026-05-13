@@ -4,11 +4,16 @@
 - Supporta il caricamento di file WAV o MP3; i file MP3 vengono convertiti automaticamente in WAV.
 
 ## Firefox build (same app)
-Per Firefox usa `manifest.firefox.json` come `manifest.json` nel pacchetto finale. Esempio:
+Per creare gli zip release usa lo script dedicato:
 
 ```bash
-mkdir -p dist/firefox && cp -R assets content.js fabamore-swal2-icon.jpg fabamore_16.jpg fabamore_48.jpg fabamore_64.jpg fabamore_128.jpg README.md dist/firefox/ && cp manifest.firefox.json dist/firefox/manifest.json && (cd dist/firefox && zip -r ../fabamore-firefox.zip . -x "*\.DS_Store")
+./scripts/build-release.sh firefox
 ```
+
+Target supportati:
+- `./scripts/build-release.sh chrome`
+- `./scripts/build-release.sh firefox`
+- `./scripts/build-release.sh both`
 
 ## Firefox release procedure (AMO)
 
@@ -30,7 +35,7 @@ Usa questa procedura per ogni aggiornamento su Firefox Add-ons (AMO).
 
 Comando consigliato:
 ```bash
-mkdir -p dist/firefox && cp -R assets content.js fabamore-swal2-icon.jpg fabamore_16.jpg fabamore_48.jpg fabamore_64.jpg fabamore_128.jpg README.md dist/firefox/ && cp manifest.firefox.json dist/firefox/manifest.json && (cd dist/firefox && zip -r ../fabamore-firefox.zip . -x "*.DS_Store")
+./scripts/build-release.sh firefox
 ```
 
 ### 3. Upload su Firefox Add-ons
@@ -70,17 +75,15 @@ No remote scripts are fetched or executed. All JavaScript is packaged inside the
 # Changelog
 
 ## Unreleased
+- Auto-detect the current language and translate all FabaMore-added UI strings in English, Italian, French, and Spanish, with English fallback for unsupported locales.
 - Detect valid FabaMe invite pages from the invite Ajax response instead of translated page text, so the FabaMore popup opens only after a real successful invite payload is received.
 - Read `remainingTime` from the invite response and stop uploads early when the selected audio is longer than the time still available on that FabaMe.
 - Bundle SweetAlert2 CSS inside the extension so the FabaMore popup renders as a real modal again on invite pages.
 - Load SweetAlert2 JavaScript only after the page head is ready, avoiding the early `appendChild` crash introduced by invite detection at `document_start`.
 
-## 2.2 - 2026-05-11
+## 2.1 - 2026-05-13
 - On the final invite step, route review links by browser and language (`it` vs non-`it`) for both Chrome Web Store and Firefox Add-ons.
-
-## 2.1 - 2026-04-29
-- Add dedicated `manifest.firefox.json` for Firefox WebExtensions, mirroring the Chrome behavior and assets.
-- Keep runtime behavior identical between Chrome and Firefox builds; only packaging metadata differs.
+- Add multi-language support for invite pages with translations for EN, IT, FR, ES
 
 ## 2.0 - 2026-04-28
 - Bump extension version to 2.0.
