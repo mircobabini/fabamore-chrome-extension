@@ -3,52 +3,55 @@
 - [How to](https://mircobabini.dev/fabamore-per-faba-e-faba-plus/)
 - Supporta il caricamento di file WAV o MP3; i file MP3 vengono convertiti automaticamente in WAV.
 
-## Firefox build (same app)
-Per creare gli zip release usa lo script dedicato:
+## Build
+Usa lo script dedicato per generare gli zip release in `dist/`:
 
 ```bash
+./scripts/build-release.sh chrome
 ./scripts/build-release.sh firefox
+./scripts/build-release.sh both
 ```
 
-Target supportati:
-- `./scripts/build-release.sh chrome`
-- `./scripts/build-release.sh firefox`
-- `./scripts/build-release.sh both`
+Output:
+- `dist/fabamore-chrome.zip`
+- `dist/fabamore-firefox.zip`
 
-## Firefox release procedure (AMO)
+Note:
+- Chrome usa `manifest.json`.
+- Firefox usa `manifest.firefox.json`, copiato nello zip come `manifest.json`.
 
-Usa questa procedura per ogni aggiornamento su Firefox Add-ons (AMO).
+## Release checklist
+Prima di pubblicare:
+1. Completa le modifiche.
+2. Aggiorna la versione nel manifest corretto:
+   - Chrome: `manifest.json`
+   - Firefox: `manifest.firefox.json`
+3. Aggiorna il changelog in `README.md`.
+4. Rigenera lo zip con `./scripts/build-release.sh <target>`.
+5. Fai uno smoke test locale:
+   - Chrome: `chrome://extensions` > `Load unpacked`
+   - Firefox: `about:debugging#/runtime/this-firefox` > `Load Temporary Add-on`
 
-### 1. Preparazione release
-1. Completa le modifiche al codice.
-2. Aggiorna la versione in `manifest.firefox.json` (deve essere maggiore rispetto alla versione già pubblicata su AMO).
-3. Aggiorna il changelog in questo file (`README.md`) con:
-   - numero versione;
-   - data release;
-   - elenco sintetico delle modifiche visibili agli utenti.
-4. Esegui smoke test locale caricando l'estensione temporanea in Firefox da `about:debugging#/runtime/this-firefox`.
+## Chrome release
+1. Apri il [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/).
+2. Seleziona `FabaMore`.
+3. Carica `dist/fabamore-chrome.zip`.
+4. Controlla warning su permessi o package contents.
+5. Verifica listing e privacy info, poi invia la release in review.
+6. Dopo approvazione, pubblica subito o usa publish differito se preferisci.
+7. Verifica che lo store mostri la nuova versione e fai un rapido smoke test sulla build pubblicata.
 
-### 2. Creazione pacchetto upload
-1. Genera il pacchetto Firefox con i file estensione alla root dell'archivio (non dentro una cartella padre).
-2. Assicurati che nel pacchetto il nome file sia `manifest.json` (copiato da `manifest.firefox.json`).
-3. Non includere `.git/`, file temporanei o `.DS_Store`.
+## Firefox release
+1. Apri il [Firefox Add-ons Developer Hub](https://addons.mozilla.org/developers/).
+2. Seleziona `FabaMore`.
+3. Carica `dist/fabamore-firefox.zip` con `Upload New Version`.
+4. Controlla warning su compatibilità o permessi.
+5. Verifica listing e privacy info, poi invia la release in review.
+6. Dopo approvazione, pubblica la release e verifica la nuova versione su AMO.
+7. Installa o aggiorna l’add-on pubblicato e fai un rapido smoke test.
 
-Comando consigliato:
-```bash
-./scripts/build-release.sh firefox
-```
-
-### 3. Upload su Firefox Add-ons
-1. Apri il Developer Hub: `https://addons.mozilla.org/developers/`.
-2. Seleziona l'add-on `FabaMore` (oppure creane uno nuovo se è la prima pubblicazione).
-3. Apri `Upload New Version`.
-4. Carica `dist/fabamore-firefox.zip`.
-5. Verifica eventuali warning su compatibilità o permessi.
-
-### 4. Invio revisione
-1. Controlla che descrizione, privacy e metadati listing siano aggiornati.
-2. Invia la versione in review.
-3. Nel campo note per i reviewer AMO, incolla questo testo se compaiono warning su `eval`/`innerHTML`:
+## Firefox reviewer note
+Se AMO segnala warning su `eval` o `innerHTML`, usa questa nota per i reviewer:
 
 ```text
 The flagged patterns (“Function constructor is eval” and “Unsafe assignment to innerHTML”) originate from the bundled third-party library assets/js/sweetalert2@11.min.js, used only for local modal UI rendering.
@@ -56,34 +59,16 @@ The flagged patterns (“Function constructor is eval” and “Unsafe assignmen
 No remote scripts are fetched or executed. All JavaScript is packaged inside the add-on at build/upload time. Our first-party script (content.js) does not use eval/new Function and does not assign to innerHTML.
 ```
 
-4. Se AMO segnala problemi o rifiuta la versione:
-   - non riprovare più volte con la stessa argomentazione;
-   - passa subito al fallback tecnico: rimuovere SweetAlert2 e sostituire i popup con UI nativa/custom;
-   - incrementa di nuovo la versione, rigenera ZIP e ricarica.
-
-### 5. Pubblicazione e verifica post-release
-1. Dopo approvazione, pubblica la versione (o conferma autopublish se configurato).
-2. Verifica che la pagina AMO mostri la nuova versione.
-3. Installa/aggiorna da AMO e ripeti uno smoke test rapido sul flusso principale in `studio.myfaba.com`.
-
-### Note importanti AMO
-- Mantieni stabile `browser_specific_settings.gecko.id` tra tutte le versioni pubblicate.
-- Ogni update richiede una versione più alta del manifest.
-- Se cambiano i permessi, Firefox può richiedere una nuova accettazione agli utenti.
-- Strategia approvata per questo progetto: primo tentativo "keep-and-explain"; se AMO rifiuta anche una sola volta per questi warning, passare direttamente al refactor senza ulteriore negoziazione.
+Se AMO rifiuta comunque la release, passa al fallback tecnico: rimuovere SweetAlert2 e sostituire i popup con UI nativa/custom.
 
 # Changelog
 
-## Unreleased
+## 2.1 - 2026-05-13
 - Auto-detect the current language and translate all FabaMore-added UI strings in English, Italian, French, and Spanish, with English fallback for unsupported locales.
 - Detect valid FabaMe invite pages from the invite Ajax response instead of translated page text, so the FabaMore popup opens only after a real successful invite payload is received.
 - Read `remainingTime` from the invite response and stop uploads early when the selected audio is longer than the time still available on that FabaMe.
 - Bundle SweetAlert2 CSS inside the extension so the FabaMore popup renders as a real modal again on invite pages.
 - Load SweetAlert2 JavaScript only after the page head is ready, avoiding the early `appendChild` crash introduced by invite detection at `document_start`.
-
-## 2.1 - 2026-05-13
-- On the final invite step, route review links by browser and language (`it` vs non-`it`) for both Chrome Web Store and Firefox Add-ons.
-- Add multi-language support for invite pages with translations for EN, IT, FR, ES
 
 ## 2.0 - 2026-04-28
 - Bump extension version to 2.0.
